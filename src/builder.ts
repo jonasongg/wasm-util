@@ -454,6 +454,12 @@ const wasm = {
     }),
   }),
 
+  data: (offset: WasmNumericFor<"i32">, data: string): WasmData => ({
+    op: "data",
+    offset,
+    data,
+  }),
+
   func(name: WasmLabel): WasmFuncTypeHelper {
     const funcType: WasmFuncType = {
       paramTypes: {},
