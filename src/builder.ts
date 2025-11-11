@@ -19,7 +19,8 @@ import {
   type WasmBr,
   type WasmBrTable,
   type WasmCall,
-  type WasmComparisonOpFor,
+  type WasmComparisonOp,
+  type WasmConst,
   type WasmConversionOp,
   type WasmData,
   type WasmDrop,
@@ -37,7 +38,7 @@ import {
   type WasmIntNumericType,
   type WasmIntTestOp,
   type WasmLabel,
-  type WasmLoadOpFor,
+  type WasmLoadOp,
   type WasmLocalGet,
   type WasmLocals,
   type WasmLocalSet,
@@ -46,12 +47,11 @@ import {
   type WasmMemoryCopy,
   type WasmModule,
   type WasmNumeric,
-  type WasmNumericConst,
   type WasmNumericFor,
   type WasmNumericType,
   type WasmReturn,
   type WasmSelect,
-  type WasmStoreOpFor,
+  type WasmStoreOp,
   type WasmUnaryOp,
   type WasmUnreachable,
 } from "./types.js";
@@ -61,7 +61,7 @@ const binaryOp = <
   T extends WasmNumericType,
   const Op extends ((
     | WasmBinaryOp<T>
-    | WasmComparisonOpFor<T>
+    | WasmComparisonOp<T>
   )["op"] extends `${T}.${infer S}`
     ? S
     : never)[]
@@ -97,7 +97,7 @@ const unaryOp = <
   const Op extends ((
     | WasmConversionOp<T>
     | (T extends WasmIntNumericType
-        ? WasmIntTestOp<T>
+        ? WasmIntTestOp<T> | WasmLoadOp<T>
         : T extends WasmFloatNumericType
         ? WasmUnaryOp<T>
         : never)
@@ -129,54 +129,56 @@ const unaryOp = <
     }
   );
 
-const i32Load = (address: WasmNumericFor<"i32">): WasmLoadOpFor<"i32"> => ({
-  op: "i32.load",
-  address,
-});
+type NumericBuilder<T extends WasmNumericType> = {
+  [K in WasmInstruction["op"] as K extends `${T}.${infer S}` ? S : never]: (
+    ...args: never[]
+  ) => Extract<WasmNumericFor<T>, { op: K }>;
+};
+
+const loadHelper =
+  <const Op extends string>(op: Op) =>
+  (address: WasmNumericFor<"i32">) => ({ op, address });
+
 const i32 = {
-  const: (value: number | bigint): WasmNumericConst<"i32"> => ({
+  const: (value: number | bigint): WasmConst<"i32"> => ({
     op: "i32.const",
     value: BigInt(value),
   }),
   ...binaryOp("i32", [...intBinaryOp, ...intComparisonOp]),
   ...unaryOp("i32", [...i32ConversionOp, ...intConversionOp, ...intTestOp]),
-  load: i32Load,
-  load8_s: i32Load,
-  load8_u: i32Load,
-  load16_s: i32Load,
-  load16_u: i32Load,
+  load: loadHelper("i32.load"),
+  load8_s: loadHelper("i32.load8_s"),
+  load8_u: loadHelper("i32.load8_u"),
+  load16_s: loadHelper("i32.load16_s"),
+  load16_u: loadHelper("i32.load16_u"),
   store: (
     address: WasmNumericFor<"i32">,
     value: WasmNumericFor<"i32">
-  ): WasmStoreOpFor<"i32"> => ({ op: "i32.store", address, value }),
-};
+  ): WasmStoreOp<"i32"> => ({ op: "i32.store", address, value }),
+} satisfies NumericBuilder<"i32">;
 
-const i64Load = (address: WasmNumericFor<"i32">): WasmLoadOpFor<"i64"> => ({
-  op: "i64.load",
-  address,
-});
 const i64 = {
-  const: (value: number | bigint): WasmNumericConst<"i64"> => ({
+  const: (value: number | bigint): WasmConst<"i64"> => ({
     op: "i64.const",
     value: BigInt(value),
   }),
   ...binaryOp("i64", [...intBinaryOp, ...intComparisonOp]),
   ...unaryOp("i64", [...i64ConversionOp, ...intConversionOp, ...intTestOp]),
-  load: i64Load,
-  load8_s: i64Load,
-  load8_u: i64Load,
-  load16_s: i64Load,
-  load16_u: i64Load,
-  load32_s: i64Load,
-  load32_u: i64Load,
+  load: loadHelper("i64.load"),
+  load8_s: loadHelper("i64.load8_s"),
+  load8_u: loadHelper("i64.load8_u"),
+  load16_s: loadHelper("i64.load16_s"),
+  load16_u: loadHelper("i64.load16_u"),
+  load32_s: loadHelper("i64.load32_s"),
+  load32_u: loadHelper("i64.load32_u"),
   store: (
     address: WasmNumericFor<"i32">,
     value: WasmNumericFor<"i64">
-  ): WasmStoreOpFor<"i64"> => ({ op: "i64.store", address, value }),
-};
+  ): WasmStoreOp<"i64"> => ({ op: "i64.store", address, value }),
+} satisfies NumericBuilder<"i64">;
 
 const f32 = {
-  const: (value: number): WasmNumericConst<"f32"> => ({
+  const: (value: number): WasmConst<"f32"> => ({
     op: "f32.const",
     value,
   }),
@@ -186,18 +188,18 @@ const f32 = {
     ...floatConversionOp,
     ...floatUnaryOp,
   ]),
-  load: (address: WasmNumericFor<"i32">): WasmLoadOpFor<"f32"> => ({
+  load: (address: WasmNumericFor<"i32">): WasmLoadOp<"f32"> => ({
     op: "f32.load",
     address,
   }),
   store: (
     address: WasmNumericFor<"i32">,
     value: WasmNumericFor<"f32">
-  ): WasmStoreOpFor<"f32"> => ({ op: "f32.store", address, value }),
-};
+  ): WasmStoreOp<"f32"> => ({ op: "f32.store", address, value }),
+} satisfies NumericBuilder<"f32">;
 
 const f64 = {
-  const: (value: number): WasmNumericConst<"f64"> => ({
+  const: (value: number): WasmConst<"f64"> => ({
     op: "f64.const",
     value,
   }),
@@ -207,15 +209,15 @@ const f64 = {
     ...floatConversionOp,
     ...floatUnaryOp,
   ]),
-  load: (address: WasmNumericFor<"i32">): WasmLoadOpFor<"f64"> => ({
+  load: (address: WasmNumericFor<"i32">): WasmLoadOp<"f64"> => ({
     op: "f64.load",
     address,
   }),
   store: (
     address: WasmNumericFor<"i32">,
     value: WasmNumericFor<"f64">
-  ): WasmStoreOpFor<"f64"> => ({ op: "f64.store", address, value }),
-};
+  ): WasmStoreOp<"f64"> => ({ op: "f64.store", address, value }),
+} satisfies NumericBuilder<"f64">;
 
 const local = {
   get: (label: WasmLabel): WasmLocalGet => ({ op: "local.get", label }),

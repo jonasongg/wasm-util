@@ -63,6 +63,8 @@ export const floatConversionOp = [
 ] as const;
 export const f32ConversionOp = ["demote_f64", "reinterpret_i32"] as const;
 export const f64ConversionOp = ["promote_f32", "reinterpret_i64"] as const;
+export const intLoadNarrowOp = ["8_s", "8_u", "16_s", "16_u"] as const;
+export const i64LoadNarrowOp = ["32_s", "32_u"] as const;
 
 export type FloatUnaryOp = (typeof floatUnaryOp)[number];
 export type IntBinaryOp = (typeof intBinaryOp)[number];
@@ -76,10 +78,12 @@ export type I64ConversionOp = (typeof i64ConversionOp)[number];
 export type FloatConversionOp = (typeof floatConversionOp)[number];
 export type F32ConversionOp = (typeof f32ConversionOp)[number];
 export type F64ConversionOp = (typeof f64ConversionOp)[number];
+export type IntLoadNarrowOp = (typeof intLoadNarrowOp)[number];
+export type I64LoadNarrowOp = (typeof i64LoadNarrowOp)[number];
 
 // ------------------------ WASM Numeric Instructions ----------------------------
 
-export type WasmNumericConst<T extends WasmNumericType> = {
+export type WasmConst<T extends WasmNumericType> = {
   op: `${T}.const`;
   value: T extends WasmIntNumericType ? bigint : number;
 };
@@ -111,7 +115,7 @@ export type WasmIntTestOp<T extends WasmIntNumericType> = {
   [Op in IntTestOp]: { op: `${T}.${Op}`; right: WasmNumericFor<T> };
 }[IntTestOp];
 
-export type WasmComparisonOpFor<T extends WasmNumericType> =
+export type WasmComparisonOp<T extends WasmNumericType> =
   T extends WasmIntNumericType
     ? {
         [Op in IntComparisonOp]: {
@@ -129,12 +133,6 @@ export type WasmComparisonOpFor<T extends WasmNumericType> =
         };
       }[FloatComparisonOp]
     : never;
-
-export type WasmComparisonOp =
-  | WasmComparisonOpFor<"i32">
-  | WasmComparisonOpFor<"i64">
-  | WasmComparisonOpFor<"f32">
-  | WasmComparisonOpFor<"f64">;
 
 type ExtractConversion<I extends string> = I extends `${string}_${infer T}`
   ? T extends WasmNumericType
@@ -161,45 +159,48 @@ export type WasmConversionOp<T extends WasmNumericType> =
     ? F32ConversionOp | FloatConversionOp
     : F64ConversionOp | FloatConversionOp}`>;
 
-export type WasmLoadOpFor<T extends WasmNumericType> = {
+export type WasmLoadOp<T extends WasmNumericType> = {
   op: `${T}.load`;
   address: WasmNumericFor<"i32">;
 };
-export type WasmLoadNarrowFor<T extends WasmIntNumericType> = {
-  op: `${T}.load${
-    | "8_s"
-    | "8_u"
-    | "16_s"
-    | "16_u"
-    | (T extends "i64" ? "32_s" | "32_u" : never)}`;
-  address: WasmNumericFor<"i32">;
-};
-
+export type WasmLoadNarrowOp<T extends WasmIntNumericType> = T extends "i32"
+  ? {
+      [Op in IntLoadNarrowOp]: {
+        op: `${T}.load${Op}`;
+        address: WasmNumericFor<"i32">;
+      };
+    }[IntLoadNarrowOp]
+  : {
+      [Op in IntLoadNarrowOp | I64LoadNarrowOp]: {
+        op: `${T}.load${Op}`;
+        address: WasmNumericFor<"i32">;
+      };
+    }[IntLoadNarrowOp | I64LoadNarrowOp];
 export type WasmLoad =
-  | WasmLoadOpFor<"i32">
-  | WasmLoadOpFor<"i64">
-  | WasmLoadOpFor<"f32">
-  | WasmLoadOpFor<"f64">
-  | WasmLoadNarrowFor<"i32">
-  | WasmLoadNarrowFor<"i64">;
+  | WasmLoadOp<"i32">
+  | WasmLoadOp<"i64">
+  | WasmLoadOp<"f32">
+  | WasmLoadOp<"f64">
+  | WasmLoadNarrowOp<"i32">
+  | WasmLoadNarrowOp<"i64">;
 
-export type WasmStoreOpFor<T extends WasmNumericType> = {
+export type WasmStoreOp<T extends WasmNumericType> = {
   op: `${T}.store`;
   address: WasmNumericFor<"i32">;
   value: WasmNumericFor<T>;
 };
 export type WasmStore =
-  | WasmStoreOpFor<"i32">
-  | WasmStoreOpFor<"i64">
-  | WasmStoreOpFor<"f32">
-  | WasmStoreOpFor<"f64">;
+  | WasmStoreOp<"i32">
+  | WasmStoreOp<"i64">
+  | WasmStoreOp<"f32">
+  | WasmStoreOp<"f64">;
 
 export type WasmNumericFor<T extends WasmNumericType> =
-  | WasmNumericConst<T>
+  | WasmConst<T>
   | (T extends WasmFloatNumericType ? WasmUnaryOp<T> : never)
   | WasmBinaryOp<T>
   | (T extends WasmIntNumericType ? WasmIntTestOp<T> : never)
-  | (T extends "i32" ? WasmComparisonOp : never)
+  | (T extends "i32" ? WasmComparisonOp<WasmNumericType> : never)
   | WasmConversionOp<T>
 
   // below are not numeric instructions, but the results of these are numeric
@@ -316,7 +317,8 @@ type WasmControl =
 
 // ------------------------ WASM Module Instructions ----------------------------
 
-export type WasmLocals = Record<WasmLabel, WasmNumericType>;
+type BuilderAsType = { "~type": WasmNumericType };
+export type WasmLocals = Record<WasmLabel, BuilderAsType>;
 export type WasmFuncType = {
   paramTypes: WasmLocals;
   resultTypes: WasmNumericType[];

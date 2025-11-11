@@ -4,6 +4,7 @@ import type {
   WasmBr,
   WasmBrTable,
   WasmCall,
+  WasmConst,
   WasmData,
   WasmDrop,
   WasmExport,
@@ -22,7 +23,6 @@ import type {
   WasmLoop,
   WasmMemoryCopy,
   WasmModule,
-  WasmNumericConst,
   WasmNumericType,
   WasmReturn,
   WasmSelect,
@@ -37,7 +37,7 @@ export class WatGenerator implements WatVisitor {
     return this[instrToMethodMap[instruction.op]](instruction as any);
   }
   // Numeric visitor methods
-  visitConstOp(instruction: WasmNumericConst<WasmNumericType>): string {
+  visitConstOp(instruction: WasmConst<WasmNumericType>): string {
     return `(${instruction.op} ${instruction.value})`;
   }
   visitUnaryOp(instruction: { op: string; right: WasmInstruction }): string {
