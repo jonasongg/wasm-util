@@ -425,16 +425,16 @@ const wasm = {
 
       return {
         ...importInstr,
-        params(...params: WasmNumericType[]) {
-          funcType.paramTypes.push(...params);
+        params(...params: BuilderAsType[]) {
+          funcType.paramTypes.push(...params.map((p) => p["~type"]));
           return this;
         },
-        locals(...locals: WasmNumericType[]) {
-          funcType.localTypes.push(...locals);
+        locals(...locals: BuilderAsType[]) {
+          funcType.localTypes.push(...locals.map((l) => l["~type"]));
           return this;
         },
-        results(...results: WasmNumericType[]) {
-          funcType.resultTypes.push(...results);
+        results(...results: BuilderAsType[]) {
+          funcType.resultTypes.push(...results.map((r) => r["~type"]));
           return this;
         },
       };
