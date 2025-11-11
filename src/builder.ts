@@ -385,10 +385,11 @@ const wasm = {
   ): WasmBrTable => ({ op: "br_table", labels, value }),
 
   call: (
-    functionName: WasmLabel
+    functionName: WasmLabel | WasmFunction
   ): WasmCall & { args(...args: WasmNumeric[]): WasmCall } => ({
     op: "call",
-    function: functionName,
+    function:
+      typeof functionName === "string" ? functionName : functionName.name,
     arguments: [],
     args(...args: WasmNumeric[]): WasmCall {
       return { ...this, arguments: args };
