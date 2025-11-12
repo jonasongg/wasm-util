@@ -22,6 +22,7 @@ import type {
   WasmLoop,
   WasmMemoryCopy,
   WasmModule,
+  WasmNop,
   WasmNumericType,
   WasmReturn,
   WasmSelect,
@@ -103,6 +104,9 @@ export class WatGenerator implements WatVisitor {
   visitDropOp(instruction: WasmDrop): string {
     const value = instruction.value ? this.visit(instruction.value) : "";
     return `(${instruction.op} ${value})`;
+  }
+  visitNopOp(instruction: WasmNop): string {
+    return `(${instruction.op})`;
   }
   visitBrOp(instruction: WasmBr): string {
     return `(${instruction.op} ${instruction.label})`;

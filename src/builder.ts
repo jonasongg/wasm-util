@@ -45,6 +45,7 @@ import {
   type WasmLoop,
   type WasmMemoryCopy,
   type WasmModule,
+  type WasmNop,
   type WasmNumeric,
   type WasmNumericFor,
   type WasmNumericType,
@@ -378,6 +379,7 @@ const wasm = {
   },
   drop: (value?: WasmInstruction): WasmDrop => ({ op: "drop", value }),
   unreachable: (): WasmUnreachable => ({ op: "unreachable" }),
+  nop: (): WasmNop => ({ op: "nop" }),
   br: (label: WasmLabel): WasmBr => ({ op: "br", label }),
   br_table: (
     value: WasmNumeric,
@@ -649,11 +651,12 @@ const instrToMethodMap = {
   "memory.copy": "visitMemoryCopyOp",
 
   // control
+  unreachable: "visitUnreachableOp",
+  drop: "visitDropOp",
+  nop: "visitNopOp",
   block: "visitBlockOp",
   loop: "visitLoopOp",
   if: "visitIfOp",
-  unreachable: "visitUnreachableOp",
-  drop: "visitDropOp",
   br: "visitBrOp",
   br_table: "visitBrTableOp",
   call: "visitCallOp",

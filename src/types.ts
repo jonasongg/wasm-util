@@ -262,6 +262,7 @@ type WasmMemory = WasmMemoryCopy;
 
 export type WasmUnreachable = { op: "unreachable" };
 export type WasmDrop = { op: "drop"; value: WasmInstruction | undefined };
+export type WasmNop = { op: "nop" };
 
 export type WasmBlockType = {
   paramTypes: WasmNumericType[];
@@ -304,11 +305,12 @@ export type WasmSelect = {
 };
 
 type WasmControl =
+  | WasmUnreachable
+  | WasmDrop
+  | WasmNop
   | WasmBlock
   | WasmLoop
   | WasmIf
-  | WasmUnreachable
-  | WasmDrop
   | WasmBr
   | WasmBrTable
   | WasmCall
