@@ -112,8 +112,9 @@ export class WatGenerator implements WatVisitor {
     return `(${instruction.op} ${instruction.label})`;
   }
   visitBrTableOp(instruction: WasmBrTable): string {
+    const value = this.visit(instruction.value);
     const labels = instruction.labels.join(" ");
-    return `(${instruction.op} ${labels})`;
+    return `(${instruction.op} ${labels} ${value})`;
   }
   visitCallOp(instruction: WasmCall): string {
     const args = instruction.arguments.map((arg) => this.visit(arg)).join(" ");
