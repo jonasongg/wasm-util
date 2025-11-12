@@ -295,7 +295,7 @@ export type WasmCall = {
   function: WasmLabel;
   arguments: WasmNumeric[];
 };
-export type WasmReturn = { op: "return"; values: WasmNumeric[] };
+export type WasmReturn = { op: "return"; values: WasmInstruction[] };
 export type WasmSelect = {
   op: "select";
   first: WasmNumeric;

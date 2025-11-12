@@ -396,7 +396,10 @@ const wasm = {
     },
   }),
 
-  return: (...values: WasmNumeric[]): WasmReturn => ({ op: "return", values }),
+  return: (...values: WasmInstruction[]): WasmReturn => ({
+    op: "return",
+    values,
+  }),
   select: (
     first: WasmNumeric,
     second: WasmNumeric,
@@ -488,6 +491,19 @@ const wasm = {
       },
     };
   },
+
+  export: (name: string) => ({
+    memory: (index: number): WasmExport => ({
+      op: "export",
+      name,
+      externType: { type: "memory", index },
+    }),
+    func: (identifier: WasmLabel): WasmExport => ({
+      op: "export",
+      name,
+      externType: { type: "func", identifier },
+    }),
+  }),
 
   module(): WasmModuleHelper {
     const definitions: Omit<WasmModule, "op"> = {
